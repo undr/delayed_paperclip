@@ -29,7 +29,7 @@ module Delayed
         end
 
         define_method "#{name}_processed!" do
-          return unless column_exists?(:"#{name}_processing")
+          return unless self.respond_to?(:"#{name}_processing")
           return unless self.send(:"#{name}_processing?")
 
           self.send("#{name}_processing=", false)
@@ -37,7 +37,7 @@ module Delayed
         end
 
         define_method "#{name}_processing!" do
-          return unless column_exists?(:"#{name}_processing")
+          return unless self.respond_to?(:"#{name}_processing")
           return if self.send(:"#{name}_processing?")
           return unless self.send(:"#{name}_changed?")
 
@@ -72,10 +72,7 @@ module Delayed
       def resque?
         defined? Resque
       end
-      
-      def column_exists?(column)
-        self.class.columns_hash.has_key?(column.to_s)
-      end
+
     end      
   end
 end
@@ -85,13 +82,12 @@ module Paperclip
     attr_accessor :job_is_processing
 
     def url_with_processed style = default_style, include_updated_timestamp = true
-      return url_without_processed style, include_updated_timestamp unless @instance.respond_to?(:column_exists?)
       return url_without_processed style, include_updated_timestamp if job_is_processing
 
-      if !@instance.column_exists?(:"#{@name}_processing")
+      unless @instance.respond_to?(:"#{@name}_processing")
         url_without_processed style, include_updated_timestamp
       else
-        if !@instance.send(:"#{@name}_processing?")
+        unless @instance.send(:"#{@name}_processing?")
           url_without_processed style, include_updated_timestamp
         else
           if @instance.send(:"#{@name}_changed?")
