@@ -145,4 +145,18 @@ class DelayedPaperclipTest < Test::Unit::TestCase
 
     assert @dummy.image.url
   end
+  
+  def test_set_backend_to_delayed_job
+     reset_class "Dummy", false
+     Dummy.send(:process_in_background, :image, :delayed_job)
+     @dummy = Dummy.new(:image => File.open("#{RAILS_ROOT}/test/fixtures/12k.png"))
+     assert @dummy.delayed_job?
+  end
+  
+  def test_set_backend_to_resque
+    reset_class "Dummy", false
+    Dummy.send(:process_in_background, :image, :resque)
+    @dummy = Dummy.new(:image => File.open("#{RAILS_ROOT}/test/fixtures/12k.png"))
+    assert @dummy.resque?
+  end
 end

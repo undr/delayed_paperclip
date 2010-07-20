@@ -2,10 +2,12 @@ module Delayed
   module Paperclip
     def self.included(base)
       base.extend(ClassMethods)
+      base.cattr_accessor :delayed_paperclip_backend
     end
 
     module ClassMethods
-      def process_in_background(name)
+      def process_in_background(name, backend = autodetect_backend)
+        self.delayed_paperclip_backend = backend
         include InstanceMethods
 
         define_method "#{name}_changed?" do
@@ -50,6 +52,14 @@ module Delayed
         after_save  :"enqueue_job_for_#{name}"
       end
     end
+    
+    def autodetect_backend
+      if defined? Delayed::Job 
+        :delayed_job
+      elsif defined? Resque
+        :resque
+      end
+    end
 
     module InstanceMethods
       PAPERCLIP_ATTRIBUTES = ['_file_size', '_file_name', '_content_type', '_updated_at']
@@ -66,11 +76,11 @@ module Delayed
       end
 
       def delayed_job?
-        defined? Delayed::Job
+        self.class.delayed_paperclip_backend == :delayed_job
       end
 
       def resque?
-        defined? Resque
+        self.class.delayed_paperclip_backend == :resque
       end
 
     end      
